@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Match</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: linear-gradient(to right, #00c6ff, #0072ff);
+        padding: 20px;
+        min-height: 100vh;
+        margin: 0;
+        color: #fff;
+      }
+      h1 {
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px #000;
+      }
+      #controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #game-board {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        grid-gap: 10px;
+        margin-top: 20px;
+        width: 100%;
+        max-width: 600px;
+      }
+      .card {
+        width: 70px;
+        height: 70px;
+        background-color: #1e90ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 10px;
+        user-select: none;
+        transition: 0.3s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .card.flipped {
+        background-color: #fff;
+        color: #1e90ff;
+        transform: rotateY(180deg);
+      }
+      #stats {
+        margin-top: 15px;
+        display: flex;
+        gap: 20px;
+        font-size: 18px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      button,
+      select {
+        margin-top: 15px;
+        padding: 8px 16px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: none;
+        transition: 0.3s;
+      }
+      button {
+        background-color: #ff6347;
+        color: #fff;
+      }
+      button:hover {
+        background-color: #e5533d;
+      }
+      select {
+        background-color: #1e90ff;
+        color: #fff;
+      }
+      #message {
+        margin-top: 20px;
+        font-size: 22px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px #000;
+      }
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        top: 0;
+        z-index: 1000;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Advanced Memory Match Game</h1>
+
+    <div id="controls">
+      <label
+        >Level:
+        <select id="level">
+          <option value="easy">Easy (8 Pairs)</option>
+          <option value="medium">Medium (12 Pairs)</option>
+          <option value="hard">Hard (16 Pairs)</option>
+        </select>
+      </label>
+      <label
+        >Theme:
+        <select id="theme">
+          <option value="fruits">Fruits</option>
+          <option value="animals">Animals</option>
+          <option value="emoji">Emoji</option>
+        </select>
+      </label>
+      <button id="restart">Restart Game</button>
+    </div>
+
+    <div id="stats">
+      <div id="moves">Moves: 0</div>
+      <div id="timer">Time: 0s</div>
+      <div id="score">Score: 0</div>
+    </div>
+
+    <div id="game-board"></div>
+    <div id="message"></div>
+
+    <!-- Sound Effects -->
+    <audio
+      id="flipSound"
+      src="https://freesound.org/data/previews/522/522028_9247280-lq.mp3"
+    ></audio>
+    <audio
+      id="matchSound"
+      src="https://freesound.org/data/previews/276/276020_5121236-lq.mp3"
+    ></audio>
+    <audio
+      id="winSound"
+      src="https://freesound.org/data/previews/414/414209_5121236-lq.mp3"
+    ></audio>
+
+    <script>
+      // ================= GAME CONFIG =================
+      const themes = {
+        fruits: [
+          "🍎",
+          "🍌",
+          "🍇",
+          "🍉",
+          "🍓",
+          "🍍",
+          "🥝",
+          "🍑",
+          "🍒",
+          "🥭",
+          "🍋",
+          "🍏",
+          "🍐",
+          "🍈",
+          "🥥",
+          "🥑",
+        ],
+        animals: [
+          "🐶",
+          "🐱",
+          "🐭",
+          "🐹",
+          "🐰",
+          "🦊",
+          "🐻",
+          "🐼",
+          "🐨",
+          "🐯",
+          "🦁",
+          "🐮",
+          "🐷",
+          "🐸",
+          "🐵",
+          "🐔",
+        ],
+        emoji: [
+          "😀",
+          "😂",
+          "😍",
+          "😎",
+          "😡",
+          "😭",
+          "🤔",
+          "😴",
+          "😱",
+          "😇",
+          "🤩",
+          "😜",
+          "😏",
+          "😬",
+          "🤯",
+          "😤",
+        ],
+      };
+
+      let levelPairs = { easy: 8, medium: 12, hard: 16 };
+
+      let firstCard = null,
+        secondCard = null,
+        lockBoard = false,
+        moves = 0,
+        matchedPairs = 0,
+        totalPairs = 8,
+        time = 0,
+        timerInterval,
+        score = 0;
+      let cards = [];
+      const board = document.getElementById("game-board");
+      const movesEl = document.getElementById("moves");
+      const timerEl = document.getElementById("timer");
+      const scoreEl = document.getElementById("score");
+      const messageEl = document.getElementById("message");
+      const flipSound = document.getElementById("flipSound");
+      const matchSound = document.getElementById("matchSound");
+      const winSound = document.getElementById("winSound");
+
+      function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+      }
+
+      function generateCards(theme, pairs) {
+        let arr = themes[theme].slice(0, pairs);
+        return shuffle([...arr, ...arr]);
+      }
+
+      function createBoard() {
+        const level = document.getElementById("level").value;
+        const theme = document.getElementById("theme").value;
+        totalPairs = levelPairs[level];
+        cards = generateCards(theme, totalPairs);
+        matchedPairs = 0;
+        moves = 0;
+        time = 0;
+        score = 0;
+        movesEl.textContent = "Moves: 0";
+        timerEl.textContent = "Time: 0s";
+        scoreEl.textContent = "Score: 0";
+        messageEl.textContent = "";
+        lockBoard = false;
+        firstCard = null;
+        secondCard = null;
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          time++;
+          timerEl.textContent = "Time: " + time + "s";
+          updateScore();
+        }, 1000);
+
+        board.innerHTML = "";
+        cards.forEach((symbol) => {
+          const card = document.createElement("div");
+          card.classList.add("card");
+          card.dataset.symbol = symbol;
+          card.textContent = "";
+          card.addEventListener("click", flipCard);
+          board.appendChild(card);
+        });
+      }
+
+      function flipCard() {
+        if (lockBoard || this === firstCard) return;
+        this.classList.add("flipped");
+        this.textContent = this.dataset.symbol;
+        flipSound.play();
+        if (!firstCard) {
+          firstCard = this;
+          return;
+        }
+        secondCard = this;
+        moves++;
+        movesEl.textContent = "Moves: " + moves;
+        updateScore();
+        checkMatch();
+      }
+
+      function checkMatch() {
+        if (firstCard.dataset.symbol === secondCard.dataset.symbol) {
+          firstCard.removeEventListener("click", flipCard);
+          secondCard.removeEventListener("click", flipCard);
+          matchedPairs++;
+          matchSound.play();
+          resetCards();
+          if (matchedPairs === totalPairs) gameWon();
+        } else {
+          lockBoard = true;
+          setTimeout(() => {
+            firstCard.classList.remove("flipped");
+            secondCard.classList.remove("flipped");
+            firstCard.textContent = "";
+            secondCard.textContent = "";
+            resetCards();
+          }, 800);
+        }
+      }
+
+      function resetCards() {
+        [firstCard, secondCard] = [null, null];
+        lockBoard = false;
+      }
+
+      function updateScore() {
+        score = Math.max(0, matchedPairs * 100 - moves * 5 - time * 2);
+        scoreEl.textContent = "Score: " + score;
+      }
+
+      function gameWon() {
+        clearInterval(timerInterval);
+        winSound.play();
+        messageEl.textContent = `🎉 You Won! Moves: ${moves}, Time: ${time}s, Score: ${score} 🎉`;
+        launchConfetti();
+      }
+
+      function launchConfetti() {
+        for (let i = 0; i < 150; i++) {
+          const confetti = document.createElement("div");
+          confetti.classList.add("confetti");
+          confetti.style.backgroundColor = `hsl(${
+            Math.random() * 360
+          },100%,50%)`;
+          confetti.style.left = Math.random() * 100 + "vw";
+          confetti.style.animation = `fall ${
+            Math.random() * 3 + 2
+          }s linear forwards`;
+          document.body.appendChild(confetti);
+          setTimeout(() => confetti.remove(), 4000);
+        }
+      }
+
+      const style = document.createElement("style");
+      style.innerHTML = `@keyframes fall{to{transform:translateY(100vh) rotate(360deg);opacity:0;}}`;
+      document.head.appendChild(style);
+
+      document.getElementById("restart").addEventListener("click", createBoard);
+      document.getElementById("level").addEventListener("change", createBoard);
+      document.getElementById("theme").addEventListener("change", createBoard);
+
+      createBoard();
+    </script>
+  </body>
+</html>
