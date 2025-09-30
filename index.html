@@ -1,264 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Memory Game</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f9;
-      margin: 0;
-      padding: 0 10px;
-    }
-    #controls {
-      margin: 15px 0;
-    }
-    #board {
-      display: grid;
-      gap: 10px;
-      justify-content: center;
-      margin: 20px auto;
-      max-width: 100%;
-    }
-    .card {
-      width: 70px;
-      height: 70px;
-      background: #4caf50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      cursor: pointer;
-      color: transparent;
-      border-radius: 10px;
-      transition: transform 0.5s, background 0.3s, color 0.3s;
-      transform-style: preserve-3d;
-      user-select: none;
-    }
-    .card.flipped {
-      background: #fff;
-      color: #000;
-      cursor: default;
-      transform: rotateY(180deg);
-    }
-    .card.matched {
-      background: #2196f3;
-      color: #fff;
-      cursor: default;
-      transform: rotateY(180deg);
-    }
-    #stats {
-      margin: 15px 0;
-      font-size: 18px;
-    }
-    #stars {
-      font-size: 22px;
-      margin: 5px 0;
-      color: gold;
-    }
-    #message {
-      font-size: 18px;
-      margin-top: 8px;
-      font-weight: bold;
-      color: #333;
-    }
-    #leaderboard {
-      margin: 20px auto;
-      width: 95%;
-      max-width: 360px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 15px;
-      text-align: left;
-      font-size: 14px;
-    }
-    #leaderboard h2 {
-      text-align: center;
-      margin-bottom: 8px;
-      font-size: 18px;
-    }
-    #leaderboard ol {
-      padding-left: 20px;
-    }
-    #player-name {
-      padding: 5px;
-      font-size: 16px;
-      width: 140px;
-      max-width: 70%;
-    }
-    @media(max-width: 400px){
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Game</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f4f4f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      /* Navbar */
+      #navbar {
+        width: 100%;
+        background: #2196f3;
+        color: white;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 10px 0;
+        flex-wrap: wrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      #navbar input,
+      #navbar select,
+      #navbar button {
+        padding: 5px;
+        border-radius: 5px;
+        border: none;
+        font-size: 14px;
+      }
+      #navbar div {
+        margin: 5px;
+        font-size: 16px;
+      }
+      /* Board */
+      #board {
+        display: grid;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px auto;
+        max-width: 100%;
+      }
       .card {
-        width: 60px;
-        height: 60px;
-        font-size: 20px;
+        width: 70px;
+        height: 70px;
+        background: #4caf50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        color: transparent;
+        border-radius: 10px;
+        transition: transform 0.5s, background 0.3s, color 0.3s;
+        transform-style: preserve-3d;
+        user-select: none;
       }
-    }
-  </style>
-</head>
-<body>
-  <h1>Memory Game</h1>
-
-  <div id="controls">
-    <label>
-      Name:
-      <input type="text" id="player-name" placeholder="Enter your name">
-    </label>
-    <br><br>
-    <label>
-      Level:
-      <select id="level">
-        <option value="easy">Easy (8 Pairs)</option>
-        <option value="medium" disabled>Medium (12 Pairs) 🔒</option>
-        <option value="hard" disabled>Hard (16 Pairs) 🔒</option>
-      </select>
-    </label>
-    <label>
-      Theme:
-      <select id="theme">
-        <option value="fruits">Fruits</option>
-        <option value="animals">Animals</option>
-        <option value="emoji">Emoji</option>
-      </select>
-    </label>
-    <br><br>
-    <button id="start">Start Game</button>
-    <button id="restart">Restart Game</button>
-  </div>
-
-  <div id="stats">
-    <p id="moves">Moves: 0</p>
-    <p id="timer">Time: 0s</p>
-    <p id="score">Score: 0</p>
-    <div id="stars">⭐️⭐️⭐️</div>
-  </div>
-
-  <div id="board"></div>
-  <p id="message"></p>
-
-  <div id="leaderboard">
-    <h2>🏆 Leaderboard</h2>
-    <ol id="leaderboard-list"></ol>
-  </div>
-
-  <!-- Sound Effects -->
-  <audio id="match-sound" src="https://freesound.org/data/previews/415/415209_5121236-lq.mp3"></audio>
-  <audio id="mismatch-sound" src="https://freesound.org/data/previews/109/109662_945474-lq.mp3"></audio>
-  <audio id="win-sound" src="https://freesound.org/data/previews/341/341695_6268366-lq.mp3"></audio>
-
-  <script>
-    const board = document.getElementById("board");
-    const movesEl = document.getElementById("moves");
-    const timerEl = document.getElementById("timer");
-    const scoreEl = document.getElementById("score");
-    const messageEl = document.getElementById("message");
-    const levelSelect = document.getElementById("level");
-    const leaderboardList = document.getElementById("leaderboard-list");
-    const playerNameInput = document.getElementById("player-name");
-    const starsEl = document.getElementById("stars");
-    const matchSound = document.getElementById("match-sound");
-    const mismatchSound = document.getElementById("mismatch-sound");
-    const winSound = document.getElementById("win-sound");
-
-    let cards = [], firstCard, secondCard;
-    let lockBoard = false, matchedPairs = 0, totalPairs = 0;
-    let moves = 0, time = 0, score = 0, gameStarted = false, timerInterval = null;
-
-    const levelPairs = { easy: 8, medium: 12, hard: 16 };
-    const themes = {
-      fruits: ["🍎","🍌","🍇","🍊","🍉","🍓","🍍","🥭","🥝","🍒","🍐","🥥","🍑","🍋","🫐","🍈"],
-      animals: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔"],
-      emoji: ["😀","😂","😍","😎","😭","😡","🥶","🤯","😴","🥳","🤩","😇","😈","🤖","👻","💩"]
-    };
-
-    function shuffle(array){ for(let i=array.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [array[i],array[j]]=[array[j],array[i]] } return array; }
-
-    function generateCards(theme,pairs){ let chosen=themes[theme].slice(0,pairs); return shuffle([...chosen,...chosen]); }
-
-    function startTimer(){ clearInterval(timerInterval); timerInterval=setInterval(()=>{ time++; timerEl.textContent="Time: "+time+"s"; updateScore(); },1000); }
-
-    function createBoard(){
-      const level = levelSelect.value;
-      const theme = document.getElementById("theme").value;
-      totalPairs = levelPairs[level]; cards = generateCards(theme,totalPairs);
-      matchedPairs=0; moves=0; time=0; score=0;
-      movesEl.textContent="Moves: 0"; timerEl.textContent="Time: 0s"; scoreEl.textContent="Score: 0";
-      starsEl.textContent="⭐️⭐️⭐️"; messageEl.textContent="";
-      lockBoard=false; firstCard=null; secondCard=null; clearInterval(timerInterval); gameStarted=false;
-
-      let columns = totalPairs<=8?4:(totalPairs<=12?6:8);
-      board.style.gridTemplateColumns=`repeat(${columns}, minmax(60px,1fr))`;
-
-      board.innerHTML="";
-      cards.forEach(symbol=>{
-        const card=document.createElement("div");
-        card.classList.add("card");
-        card.dataset.symbol=symbol;
-        card.textContent="";
-        card.addEventListener("click", flipCard);
-        board.appendChild(card);
-      });
-    }
-
-    function flipCard(){
-      if(!gameStarted){ startTimer(); gameStarted=true; }
-      if(lockBoard || this===firstCard) return;
-      this.classList.add("flipped"); this.textContent=this.dataset.symbol;
-      if(!firstCard){ firstCard=this; return; }
-      secondCard=this; moves++; movesEl.textContent="Moves: "+moves; updateScore(); checkMatch();
-    }
-
-    function updateStars(){
-      if(moves <= totalPairs*2) starsEl.textContent="⭐️⭐️⭐️";
-      else if(moves <= totalPairs*3) starsEl.textContent="⭐️⭐️";
-      else starsEl.textContent="⭐️";
-    }
-
-    function checkMatch(){
-      if(firstCard.dataset.symbol===secondCard.dataset.symbol){
-        firstCard.classList.add("matched"); secondCard.classList.add("matched");
-        matchedPairs++; matchSound.play(); resetBoard();
-        if(matchedPairs===totalPairs){ clearInterval(timerInterval); messageEl.textContent="🎉 Congratulations! You Win!"; winSound.play(); unlockNextLevel(); saveScore(); }
-      } else {
-        lockBoard=true; mismatchSound.play();
-        setTimeout(()=>{ firstCard.classList.remove("flipped"); secondCard.classList.remove("flipped"); firstCard.textContent=""; secondCard.textContent=""; resetBoard(); },1000);
+      .card.flipped {
+        background: #fff;
+        color: #000;
+        cursor: default;
+        transform: rotateY(180deg);
       }
-      updateStars();
-    }
+      .card.matched {
+        background: #2196f3;
+        color: #fff;
+        cursor: default;
+        transform: rotateY(180deg);
+      }
+      @media (max-width: 400px) {
+        .card {
+          width: 60px;
+          height: 60px;
+          font-size: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="navbar">
+      <div>
+        Player: <input type="text" id="player-name" placeholder="Your name" />
+      </div>
+      <div>
+        Level:
+        <select id="level">
+          <option value="easy">Easy (8 Pairs)</option>
+          <option value="medium">Medium (12 Pairs)</option>
+          <option value="hard">Hard (16 Pairs)</option>
+        </select>
+      </div>
+      <div>
+        Theme:
+        <select id="theme">
+          <option value="fruits">Fruits</option>
+          <option value="animals">Animals</option>
+          <option value="emoji">Emoji</option>
+        </select>
+      </div>
+      <div id="moves">Moves: 0</div>
+      <div id="score">Score: 0</div>
+      <div id="timer">Time: 0s</div>
+      <button id="restart">Restart</button>
+    </div>
 
-    function resetBoard(){ [firstCard,secondCard]=[null,null]; lockBoard=false; }
+    <div id="board"></div>
 
-    function updateScore(){ score=Math.max(0, Math.floor((matchedPairs*100)-(moves*5)-(time*2))); scoreEl.textContent="Score: "+score; }
+    <!-- Winning sound -->
+    <audio
+      id="win-sound"
+      src="https://freesound.org/data/previews/341/341695_6268366-lq.mp3"
+    ></audio>
 
-    function unlockNextLevel(){
-      const currentLevel=levelSelect.value;
-      if(currentLevel==="easy"){ levelSelect.querySelector("option[value='medium']").disabled=false; levelSelect.querySelector("option[value='medium']").textContent="Medium (12 Pairs)"; messageEl.textContent+=" 🔓 Medium Level Unlocked!"; }
-      else if(currentLevel==="medium"){ levelSelect.querySelector("option[value='hard']").disabled=false; levelSelect.querySelector("option[value='hard']").textContent="Hard (16 Pairs)"; messageEl.textContent+=" 🔓 Hard Level Unlocked!"; }
-    }
+    <script>
+      const board = document.getElementById("board");
+      const movesEl = document.getElementById("moves");
+      const scoreEl = document.getElementById("score");
+      const timerEl = document.getElementById("timer");
+      const levelSelect = document.getElementById("level");
+      const themeSelect = document.getElementById("theme");
+      const restartBtn = document.getElementById("restart");
+      const winSound = document.getElementById("win-sound");
 
-    function saveScore(){
-      const name=playerNameInput.value.trim()||"Anonymous"; const level=levelSelect.value;
-      let leaderboard=JSON.parse(localStorage.getItem("leaderboard"))||[];
-      leaderboard.push({name,score,moves,time,level,date:new Date().toLocaleString()});
-      leaderboard.sort((a,b)=>b.score-a.score); leaderboard=leaderboard.slice(0,10);
-      localStorage.setItem("leaderboard",JSON.stringify(leaderboard)); displayLeaderboard();
-    }
+      let cards = [],
+        firstCard,
+        secondCard;
+      let lockBoard = false,
+        matchedPairs = 0;
+      let moves = 0,
+        score = 0,
+        time = 0,
+        timerInterval = null;
+      let gameStarted = false;
 
-    function displayLeaderboard(){
-      let leaderboard=JSON.parse(localStorage.getItem("leaderboard"))||[];
-      leaderboardList.innerHTML="";
-      leaderboard.forEach(entry=>{
-        let li=document.createElement("li");
-        li.textContent=`${entry.name} | ${entry.score} pts | ${entry.moves} moves | ${entry.time}s | ${entry.level.toUpperCase()} (${entry.date})`;
-        leaderboardList.appendChild(li);
-      });
-    }
+      const symbolPool = {
+        fruits: [
+          "🍎",
+          "🍌",
+          "🍇",
+          "🍊",
+          "🍉",
+          "🍓",
+          "🍍",
+          "🥭",
+          "🥝",
+          "🍒",
+          "🍐",
+          "🥥",
+          "🍑",
+          "🍋",
+          "🫐",
+          "🍈",
+        ],
+        animals: [
+          "🐶",
+          "🐱",
+          "🐭",
+          "🐹",
+          "🐰",
+          "🦊",
+          "🐻",
+          "🐼",
+          "🐨",
+          "🐯",
+          "🦁",
+          "🐮",
+          "🐷",
+          "🐸",
+          "🐵",
+          "🐔",
+        ],
+        emoji: [
+          "😀",
+          "😂",
+          "😍",
+          "😎",
+          "😭",
+          "😡",
+          "🥶",
+          "🤯",
+          "😴",
+          "🥳",
+          "🤩",
+          "😇",
+          "😈",
+          "🤖",
+          "👻",
+          "💩",
+        ],
+      };
 
-    document.getElementById("start").addEventListener("click", ()=>{ createBoard(); });
-    document.getElementById("restart").addEventListener("click", ()=>{ createBoard(); });
-    displayLeaderboard();
-  </script>
-</body>
+      const levelPairs = { easy: 8, medium: 12, hard: 16 };
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateCards(level, theme) {
+        let pairs = levelPairs[level];
+        let chosen = symbolPool[theme].slice(0, pairs);
+        return shuffle([...chosen, ...chosen]);
+      }
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          time++;
+          timerEl.textContent = "Time: " + time + "s";
+          updateScore();
+        }, 1000);
+      }
+
+      function createBoard() {
+        const level = levelSelect.value;
+        const theme = themeSelect.value;
+        cards = generateCards(level, theme);
+        matchedPairs = 0;
+        moves = 0;
+        score = 0;
+        time = 0;
+        movesEl.textContent = "Moves: 0";
+        scoreEl.textContent = "Score: 0";
+        timerEl.textContent = "Time: 0s";
+        lockBoard = false;
+        firstCard = null;
+        secondCard = null;
+        clearInterval(timerInterval);
+        gameStarted = false;
+
+        let cols = levelPairs[level] <= 8 ? 4 : levelPairs[level] <= 12 ? 6 : 8;
+        board.style.gridTemplateColumns = `repeat(${cols}, minmax(60px,1fr))`;
+        board.innerHTML = "";
+
+        cards.forEach((symbol) => {
+          const card = document.createElement("div");
+          card.classList.add("card");
+          card.dataset.symbol = symbol;
+          card.textContent = "";
+          card.addEventListener("click", flipCard);
+          board.appendChild(card);
+        });
+      }
+
+      function flipCard() {
+        if (!gameStarted) {
+          startTimer();
+          gameStarted = true;
+        }
+        if (lockBoard || this === firstCard) return;
+        this.classList.add("flipped");
+        this.textContent = this.dataset.symbol;
+        if (!firstCard) {
+          firstCard = this;
+          return;
+        }
+        secondCard = this;
+        moves++;
+        movesEl.textContent = "Moves: " + moves;
+        updateScore();
+        checkMatch();
+      }
+
+      function checkMatch() {
+        if (firstCard.dataset.symbol === secondCard.dataset.symbol) {
+          firstCard.classList.add("matched");
+          secondCard.classList.add("matched");
+          matchedPairs++;
+          resetBoard();
+          if (matchedPairs === levelPairs[levelSelect.value]) {
+            clearInterval(timerInterval);
+            winSound.play();
+            setTimeout(() => {
+              alert(
+                `🎉 Congratulations! You completed ${levelSelect.value.toUpperCase()} level!`
+              );
+            }, 200);
+          }
+        } else {
+          lockBoard = true;
+          setTimeout(() => {
+            firstCard.classList.remove("flipped");
+            secondCard.classList.remove("flipped");
+            firstCard.textContent = "";
+            secondCard.textContent = "";
+            resetBoard();
+          }, 1000);
+        }
+      }
+
+      function resetBoard() {
+        [firstCard, secondCard] = [null, null];
+        lockBoard = false;
+      }
+
+      function updateScore() {
+        score = Math.max(0, matchedPairs * 100 - moves * 5 - time * 2);
+        scoreEl.textContent = "Score: " + score;
+      }
+
+      // Event listeners
+      levelSelect.addEventListener("change", createBoard);
+      themeSelect.addEventListener("change", createBoard);
+      restartBtn.addEventListener("click", createBoard);
+
+      // Start initial board
+      createBoard();
+    </script>
+  </body>
 </html>
