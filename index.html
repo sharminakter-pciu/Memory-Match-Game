@@ -155,6 +155,10 @@
       id="match-sound"
       src="https://freesound.org/data/previews/341/341692_6268366-lq.mp3"
     ></audio>
+    <audio
+      id="flip-sound"
+      src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3"
+    ></audio>
 
     <canvas id="confetti"></canvas>
 
@@ -168,6 +172,7 @@
       const restartBtn = document.getElementById("restart");
       const winSound = document.getElementById("win-sound");
       const matchSound = document.getElementById("match-sound");
+      const flipSound = document.getElementById("flip-sound");
       const confettiCanvas = document.getElementById("confetti");
       const ctx = confettiCanvas.getContext("2d");
 
@@ -181,6 +186,7 @@
         time = 0,
         timerInterval = null;
       let gameStarted = false;
+      let soundUnlocked = false;
 
       const symbolPool = {
         fruits: [
@@ -239,6 +245,19 @@
         ],
       };
       const levelPairs = { easy: 8, medium: 12, hard: 16 };
+
+      // ---- Unlock sound on first user interaction ----
+      document.body.addEventListener("click", function unlockSound() {
+        if (!soundUnlocked) {
+          [winSound, matchSound, flipSound].forEach((s) => {
+            s.play().catch(() => {});
+            s.pause();
+            s.currentTime = 0;
+          });
+          soundUnlocked = true;
+          document.body.removeEventListener("click", unlockSound);
+        }
+      });
 
       function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -299,6 +318,7 @@
         if (lockBoard || this === firstCard) return;
         this.classList.add("flipped");
         this.textContent = this.dataset.symbol;
+        flipSound.play();
         if (!firstCard) {
           firstCard = this;
           return;
